@@ -35,3 +35,19 @@ The `rag_app.py` file serves as the core entry point and backend server hub for 
 
 ### Questions or Uncertainties
 - Everything is clear so far! The environment is running cleanly local, and packages are fully authenticated. Looking forward to implementing the core Retrieval-Augmented Generation (RAG) and Gemini prompting logic in the upcoming weeks.
+
+## Week 5 Summary — Gemini API Integration
+
+### What `/test-gemini` Does
+This endpoint acts as a direct development test-bridge between our backend server and Google's large language models. When a user visits the route, it triggers a backend script that requests data from Gemini using a structured prompt and serves the raw text output cleanly back to the client as JSON.
+
+### Where the Gemini Call Lives
+The model initialization (`genai.GenerativeModel`) and the generation request (`model.generate_content`) live completely contained inside the isolated `test_gemini()` function at the bottom of `rag_app.py`. Keeping this logic on the backend ensures the client side never handles or intercepts our internal system prompts.
+
+### What Was Learned From the Gemini Documentation
+- **Model Scoping:** Used `gemini-1.5-flash`, which is optimized for high-speed text generation tasks.
+- **SDK Methods:** Learned how to instantiate models using the Google GenAI SDK and extract responses cleanly via the `.text` attribute.
+- **API Safety:** Learned that error handling loops (`try/except`) must be strictly sanitized so that backend system details and environment authentication tokens are never exposed to the frontend browser during a failure.
+
+### Any Questions / Uncertainties
+- The core API connection is fully functional! Ready to start exploring how we will transition from using hardcoded text prompts to building real data chunking and embedding storage structures for the actual RAG pipeline.

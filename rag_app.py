@@ -25,4 +25,27 @@ app = FastAPI()
 # This creates the /health path your instructions asked you to test
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"}
+    return {"status": "ok"}
+
+@app.get("/test-gemini")
+def test_gemini():
+    try:
+        # 1. Initialize the model precisely as requested
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        
+        # 2. Use the exact hardcoded prompt from Step 3
+        prompt = "Explain what a large language model is in one paragraph."
+        response = model.generate_content(prompt)
+        
+        # 3. Return the response text as a clean JSON object
+        return {
+            "status": "success",
+            "gemini_response": response.text
+        }
+        
+    except Exception as e:
+        # Step 5: Raise a clear error without exposing secrets or printing the key
+        return {
+            "status": "error",
+            "message": f"An error occurred while calling the Gemini API: {str(e)}"
+        }
