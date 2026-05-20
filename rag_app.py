@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
-# 1. Add this new import line at the top
 from fastapi import FastAPI
+# ADD THIS LINE RIGHT HERE:
+import google.generativeai as genai
 
 # Load the environment variables from your local .env file
 load_dotenv()
