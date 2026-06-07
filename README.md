@@ -61,3 +61,21 @@ The `rag_app.py` file has transitioned from a static web server blueprint to an 
 
 ### Any Questions / Uncertainties
 - While the final API connection is completely functional and secure, the debugging process highlighted how fragile the pipeline can be when string formats or environment states change. Moving forward, I want to explore how to create better local logs so tracking down backend connection issues doesn't rely entirely on standard browser error strings. Ready to transition into building the custom data ingestion and chunking mechanics next week!
+
+## Week 6 Summary — Sequential Prompt Chaining Pipeline
+
+### Description of the Multi-Step Flow
+This week, the `/test-gemini` endpoint was redesigned to shift away from a basic single-request layout into a chained, multi-step pipeline architecture. The application now handles data generation across two distinct, linear phases on the backend before delivering a unified response payload to the client.
+
+### Break Down of What Each Step Does
+1. **Step 1 (Outline Generation):** The backend queries `gemini-1.5-flash` using a rigid, hardcoded prompt to generate a 3-bullet core structure outlining Python's utility. This text is held strictly inside local server memory as an intermediate variable.
+2. **Step 2 (Contextual Expansion):** The application reads that exact intermediate string variable, embeds it directly inside a new prompt template via an f-string, and calls the API a second time to force the model to expand those specific structural notes into a fluid summary paragraph.
+
+### Why the Steps Are Separated
+Dividing complex text tasks into modular, sequential phases mirrors how enterprise GenAI pipelines work in production. Splitting the process yields:
+- **Better Automated Reasoning:** Forcing the LLM to structure its rules first prevents it from losing context or drifting away from instructions mid-generation.
+- **Safer Validation Gates:** It establishes a clear foundation for our upcoming RAG pipeline, allowing data verification layers to inspect or filter information *between* independent execution stages.
+
+### Challenges & Open Questions
+- **Dependency Debugging:** A notable hurdle during development was managing local configuration and formatting rules. Getting comfortable adjusting syntax spacing in Python and recognizing editor status colors (like modified file tracking states) emphasized how meticulous backend architecture needs to be.
+- **Key Expiration Impacts:** Encountering API key invalidation blocks early on highlighted that upstream pipeline errors require robust, non-leaking safety catches (`try/except`) so that authentication tokens never escape into client-side browser errors during systemic failures.
