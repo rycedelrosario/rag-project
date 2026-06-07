@@ -31,17 +31,28 @@ def health_check():
 @app.get("/test-gemini")
 def test_gemini():
     try:
+        # Initialize the model
         model = genai.GenerativeModel("gemini-2.5-flash")
-        prompt = "Explain what a large language model is in one paragraph."
-        response = model.generate_content(prompt)
         
+        # === STEP 1: Ask for a short outline ===
+        first_prompt = "Create a brief 3-bullet point outline for an essay about why learning Python is useful."
+        first_response = model.generate_content(first_prompt)
+        outline_text = first_response.text
+        
+        # === STEP 2: Use the outline to generate the full response ===
+        # We use an f-string to inject the text from step 1 straight into step 2
+        second_prompt = f"Using this outline:\n{outline_text}\n\nWrite a coherent, single paragraph expanding on these points."
+        second_response = model.generate_content(second_prompt)
+        
+        # Return the final resulting text
         return {
             "status": "success",
-            "gemini_response": response.text
+            "step_1_outline": outline_text,
+            "step_2_final_response": second_response.text
         }
         
     except Exception as e:
         return {
             "status": "error",
-            "message": f"An error occurred while calling the Gemini API: {str(e)}"
+            "message": f"An error occurred during multi-step execution: {str(e)}"
         }
