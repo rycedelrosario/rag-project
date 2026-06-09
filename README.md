@@ -79,3 +79,24 @@ Dividing complex text tasks into modular, sequential phases mirrors how enterpri
 ### Challenges & Open Questions
 - **Dependency Debugging:** A notable hurdle during development was managing local configuration and formatting rules. Getting comfortable adjusting syntax spacing in Python and recognizing editor status colors (like modified file tracking states) emphasized how meticulous backend architecture needs to be.
 - **Key Expiration Impacts:** Encountering API key invalidation blocks early on highlighted that upstream pipeline errors require robust, non-leaking safety catches (`try/except`) so that authentication tokens never escape into client-side browser errors during systemic failures.
+
+## Week 7 Summary — Production Guardrails, Input/Output Validation & Rate Limiting
+
+### Technical Objectives Achieved
+This week, our application transitioned from a static testing environment into a robust, user-interactive backend API by implementing a live `POST /query` route using FastAPI and Pydantic data schemas. 
+
+### Why Structural Guardrails Matter in Production
+
+1. **Why Input Validation Is Crucial:**
+   Processing raw user strings directly exposes an application to system overflows, empty payload anomalies, and excessive token usage. By applying strict constraint rules (`validate_user_input`) at the gateway layer, we block invalid requests before they ever fire a cloud API call. This safeguards server runtime stability and entirely eliminates wasted operational expenses.
+
+2. **Why Output Validation Is Crucial:**
+   Generative AI models are fundamentally stochastic and can occasionally return void outputs, truncated text signatures, or fail to complete packets due to minor backend delivery drops. Enforcing server-side structural checks ensures we immediately intercept empty string payloads, throwing clean, professional errors to the frontend client instead of rendering a broken, silently failing user interface.
+
+3. **Why a Dual-Model Critic Pattern Is Used:**
+   Passing an original answer draft into a secondary, independent prompt layout (`review_model_output`) establishes an automated proofreading mechanism. This structural design helps audit logic flow, smooth out formatting quirks, and minimize algorithmic hallucinations without requiring manual human oversight.
+
+### Obstacles Overmounted & Debugging Log
+- **Resolving Void Payloads (`null` Error Signals):** Encountered an early structural hurdle where the payload successfully cleared the API handshake but returned an empty `"answer": null` layout string. Fixed this by tracking down extraction bottlenecks inside the secondary text parsing attributes and implementing clean variable fallbacks.
+- **Handling Free-Tier Quota Caps (`429` Rate Limits):** Moving to the new `gemini-2.5-flash` engine introduced tight token rate caps (5 requests per minute). Because our endpoint fires two distinct queries back-to-back, rapid client testing immediately triggered a `429 Too Many Requests` crash.
+- **The Architectural Fix:** Resolved this by updating the backend logic with Python's native `time` utility to introduce an intentional processing delay between generation stages, allowing the Google API gateway counter to reset. Additionally, deployed an exception handling block within the critic loop: if a 429 quota ceiling is encountered, the system gracefully bypasses the review tier and serves the validated primary answer, maintaining application uptime instead of throwing a generic internal server crash.
