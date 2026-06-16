@@ -128,3 +128,22 @@ The prototype incorporates five essential views tailored to user workflows and d
 ### Challenges & Engineering Takeaways
 - **Managing Vague Product Specifications:** Transitioning from rigid backend specifications to highly ambiguous frontend product scripts required testing different UI layouts side-by-side to find out which elements serve the user best.
 - **AI-Assisted Wireframing:** Leveraged sequential chat iterations in Lovable.dev to automatically generate interactive front-end states, proving how rapidly a developer can test user flows and security requirements at the visual stage.
+
+## Week 9 Summary — Code Consolidation, Technical Debt Mitigation & Optimization
+
+### Technical Objectives Achieved
+Week 9 was designated as an engineering stabilization and catch-up sprint. No new external feature specifications were introduced. Instead, development efforts were entirely focused on code refactoring, dependency validation, security auditing, and correcting upstream repository authentication bottlenecks.
+
+### Structural Adjustments & Optimization Log
+
+1. **Git Remote & Identity Realignment:**
+   Resolved a critical credential authorization block (`remote: Invalid username or token`) stemming from upstream account identity updates. Reconfigured the local repository's remote mapping architecture to target the updated user profile URI directly. Standardized the global author signing configurations (`user.name`) and safely amended the local commit log history to ensure seamless synchronization with GitHub’s Personal Access Token (PAT) security protocols.
+
+2. **Pipeline Guardrail Validation:**
+   Conducted full end-to-end stress tests on the `POST /query` endpoint built during Week 7. Verified that the `gemini-2.5-flash` model integration handles processing smoothly under local server stress. Confirmed that our custom `time.sleep()` pacing mechanics and nested `try/except` exceptions successfully catch potential `429 Too Many Requests` API quota limits, maintaining continuous server uptime.
+
+3. **Input/Output Validation Audit:**
+   Audited our Pydantic validation layers to guarantee zero-trust input safety boundaries are completely intact. Re-verified that empty strings, overly short prompts, or overflow injections are successfully caught and blocked at the API gateway layer before wasting cloud computation metrics.
+
+### Current Milestone Status
+With the backend query optimization pipelines stabilized and the product wireframes for the Frontend Portal safely documented, the entire codebase architecture is fully optimized, functional, and primed for the upcoming vector database and Retrieval-Augmented Generation (RAG) deployment phases.
