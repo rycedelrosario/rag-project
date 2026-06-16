@@ -100,3 +100,31 @@ This week, our application transitioned from a static testing environment into a
 - **Resolving Void Payloads (`null` Error Signals):** Encountered an early structural hurdle where the payload successfully cleared the API handshake but returned an empty `"answer": null` layout string. Fixed this by tracking down extraction bottlenecks inside the secondary text parsing attributes and implementing clean variable fallbacks.
 - **Handling Free-Tier Quota Caps (`429` Rate Limits):** Moving to the new `gemini-2.5-flash` engine introduced tight token rate caps (5 requests per minute). Because our endpoint fires two distinct queries back-to-back, rapid client testing immediately triggered a `429 Too Many Requests` crash.
 - **The Architectural Fix:** Resolved this by updating the backend logic with Python's native `time` utility to introduce an intentional processing delay between generation stages, allowing the Google API gateway counter to reset. Additionally, deployed an exception handling block within the critic loop: if a 429 quota ceiling is encountered, the system gracefully bypasses the review tier and serves the validated primary answer, maintaining application uptime instead of throwing a generic internal server crash.
+
+## Week 8 Summary — Wireframing, Product Design & Secure MVP Architecture
+
+### Technical Objectives Achieved
+This week, the project scope shifted from backend server loops to frontend interface design, wireframing, and product management prompt engineering. Using Lovable.dev, a complete 5-screen low-fidelity wireframe prototype was engineered for a Cybersecurity Bootcamp Student Portal.
+
+### Application Screen Architecture
+The prototype incorporates five essential views tailored to user workflows and diagnostic training tracking:
+1. **Login Screen:** Access gate utilizing authentication boundaries and secure input perimeters.
+2. **Dashboard Screen:** High-fidelity overview displaying dynamic student metrics and progress tracking.
+3. **Q&A / Quiz Screen:** Hands-on secure-coding training interface for diagnostic exercises.
+4. **Report Screen:** Performance summary module detailing grade structures and module completion.
+5. **Edit Settings Screen:** Profiles and security configuration panel for credentials.
+
+### Architectural Core Metrics Explained
+
+1. **Representing Progress Actionably (Scenario A):**
+   To solve the broad instruction "Students should see progress," the Dashboard was designed with three distinct visualization layers: a top high-level metrics percentage circle (`72% Complete`), a horizontal milestones timeline, and a granular lab checklist. The module checklist combined with stats was chosen as the optimal MVP structure. Technical students require specific, actionable visibility into which exact engineering labs (e.g., packet analysis, network scanning) they have mastered rather than relying on a vague percentage wheel alone.
+
+2. **Secure-by-Design Prototyping (Scenario C):**
+   The training interface maps out three critical security constraints directly onto the wireframe layout before any backend code is written:
+   - **Password Protection:** Cryptographically masked text blocks on the login gateway.
+   - **Input Sanitization:** Constrained text fields built to block malicious string arrays and prevent Injection exploits.
+   - **Session Handling:** Integrated layout markers for automated inactivity logout alerts on shared terminal environments.
+
+### Challenges & Engineering Takeaways
+- **Managing Vague Product Specifications:** Transitioning from rigid backend specifications to highly ambiguous frontend product scripts required testing different UI layouts side-by-side to find out which elements serve the user best.
+- **AI-Assisted Wireframing:** Leveraged sequential chat iterations in Lovable.dev to automatically generate interactive front-end states, proving how rapidly a developer can test user flows and security requirements at the visual stage.
