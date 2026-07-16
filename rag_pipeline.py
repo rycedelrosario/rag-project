@@ -163,12 +163,12 @@ def run_rag(query, conversation_history=None):
     # Filter out documents...
     # ─────────────────────────────────────────────────────────────────────────
 
-    # ── Week 10: Core Generation ──────────────────────────────────────────────
+   # ── Week 10: Core Generation ──────────────────────────────────────────────
     answer = generate_answer(query, documents, conversation_history)
 
-    # ── Week 13 TODO ──────────────────────────────────────────────────────────
-    # confidence = calculate_confidence(distances)
-    # grounding = check_hallucination(answer, documents)
+    # ── Week 13: Monitoring Quality Controls ──────────────────────────────────
+    confidence = calculate_confidence(distances)
+    grounding = check_hallucination(answer, documents)
     # ─────────────────────────────────────────────────────────────────────────
 
     # ── Week 11 TODO ──────────────────────────────────────────────────────────

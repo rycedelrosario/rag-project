@@ -35,41 +35,75 @@ def check_hallucination(answer, context_docs):
           - "is_grounded": True if verdict is GROUNDED, False otherwise
           - "warning":     A warning string to show the user (empty if grounded)
     """
-    # TODO (Week 13): Implement LLM-as-judge hallucination detection.
-    #
-    # --- The RAG concept ---
-    # This is a key quality-control technique in RAG systems. We use Gemini
-    # to judge Gemini's own output — asking it to compare the answer against
-    # the source documents and decide if the answer stayed within what the
-    # sources actually say.
-    #
-    # Why temperature=0.0?
-    # We want a consistent classification result, not a creative one.
-    # Setting temperature to 0 makes the model deterministic and precise.
-    #
-    # Steps:
-    #   1. Format context_docs into a single string:
-    #      context = "\n\n".join([f"Document {i+1}: {doc}" for i, doc in enumerate(context_docs)])
-    #
-    #   2. Build a prompt that shows Gemini the context and answer, and asks
-    #      it to respond with exactly one word: GROUNDED, PARTIAL, or HALLUCINATED.
-    #      Explain what each verdict means in the prompt.
-    #
-    #   3. Call _client.models.generate_content() with temperature=0.0
-    #      Get the verdict with: verdict = response.text.strip().upper()
-    #
-    #   4. If the verdict is not one of the three valid words, default to "PARTIAL"
-    #      (the model sometimes adds punctuation or extra words)
-    #
-    #   5. Set the "warning" string:
-    #      - GROUNDED     → warning = ""
-    #      - PARTIAL      → warning = "Note: This answer may include some information beyond the provided sources."
-    #      - HALLUCINATED → warning = "Warning: This answer may contain information not found in the source documents."
-    #
-    #   6. Return the dict. Wrap everything in try/except — if this call fails,
-    #      return: {"verdict": "UNKNOWN", "is_grounded": True, "warning": ""}
-    #
-    return {"verdict": "UNKNOWN", "is_grounded": True, "warning": ""}  # placeholder
+    if not context_docs:
+        return {
+            "verdict": "HALLUCINATED",
+            "is_grounded": False,
+            "warning": "Warning: This answer may contain information not found in the source documents."
+        }
+
+    try:
+        # 1. Format context_docs into a single string
+        context = "\n\n".join([f"Document {i+1}: {doc}" for i, doc in enumerate(context_docs)])
+
+        # 2. Build the evaluator prompt
+        prompt = f"""You are an objective AI judge evaluating whether a generated answer is supported by the provided context documents.
+
+Context Documents:
+{context}
+
+Generated Answer to Evaluate:
+{answer}
+
+Evaluate the alignment of the Generated Answer with the Context Documents. Classify the answer into exactly one of these three categories:
+- GROUNDED: The generated answer is fully supported by, and contains no factual claims outside of, the provided context documents.
+- PARTIAL: The generated answer is partially supported, but contains some additional assumptions, inferences, or outside facts not directly found in the documents.
+- HALLUCINATED: The generated answer contains significant claims, facts, or instructions that are completely unsupported by the provided context documents.
+
+Respond with exactly one word from this list: GROUNDED, PARTIAL, or HALLUCINATED. Do not include any other text, explanation, or punctuation."""
+
+        # 3. Call Gemini with deterministic parameters (temperature=0.0)
+        response = _client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(temperature=0.0),
+        )
+        
+        verdict = response.text.strip().upper()
+
+        # Clean up any trailing punctuation (like periods)
+        for char in [".", "!", ",", "\n"]:
+            verdict = verdict.replace(char, "")
+
+        # 4. Fallback default if the model deviates
+        valid_verdicts = {"GROUNDED", "PARTIAL", "HALLUCINATED"}
+        if verdict not in valid_verdicts:
+            verdict = "PARTIAL"
+
+        # 5. Set appropriate warning thresholds
+        if verdict == "GROUNDED":
+            warning = ""
+            is_grounded = True
+        elif verdict == "PARTIAL":
+            warning = "Note: This answer may include some information beyond the provided sources."
+            is_grounded = False
+        else: # HALLUCINATED
+            warning = "Warning: This answer may contain information not found in the source documents."
+            is_grounded = False
+
+        return {
+            "verdict": verdict,
+            "is_grounded": is_grounded,
+            "warning": warning
+        }
+
+    except Exception as e:
+        # 6. Safety fallback in case of API failure
+        return {
+            "verdict": "UNKNOWN",
+            "is_grounded": True,
+            "warning": ""
+        }
 
 
 def calculate_confidence(distances):
@@ -83,24 +117,15 @@ def calculate_confidence(distances):
     Returns:
         A float between 0.0 (not confident) and 1.0 (very confident).
     """
-    # TODO (Week 13): Implement the confidence score calculation.
-    #
-    # --- The RAG concept ---
-    # When ChromaDB retrieves documents, it returns a "distance" for each one.
-    # Distance measures how far apart two vectors are in embedding space.
-    # A low distance means the document is very similar to the query —
-    # which means we can be more confident the answer will be relevant.
-    #
-    # The formula to convert distance to confidence:
-    #   confidence = max(0.0, 1.0 - (avg_distance / 2.0))
-    #
-    # Why divide by 2? ChromaDB L2 distances range from 0 to 2, so
-    # dividing by 2 scales the result to a 0–1 range.
-    #
-    # Steps:
-    #   1. If distances is empty, return 0.0
-    #   2. Compute the average: avg_distance = sum(distances) / len(distances)
-    #   3. Apply the formula above
-    #   4. Return the result rounded to 2 decimal places: round(confidence, 2)
-    #
-    return 0.0  # placeholder — replace with your implementation
+    # 1. Empty distances base case
+    if not distances:
+        return 0.0
+
+    # 2. Compute the average vector distance
+    avg_distance = sum(distances) / len(distances)
+
+    # 3. Convert distance space to similarity confidence
+    confidence = max(0.0, 1.0 - (avg_distance / 2.0))
+
+    # 4. Round cleanly to 2 decimal places
+    return round(confidence, 2)
