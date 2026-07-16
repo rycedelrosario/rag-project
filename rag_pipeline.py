@@ -123,56 +123,76 @@ Instructions:
 
 def run_rag(query, conversation_history=None):
     """
-    Run the full RAG pipeline with input security checks.
+    Run the full RAG pipeline with input security checks, 
+    context filtering, and graceful fallback handling.
     """
-    # 1. Initialize ALL variables with default/empty values at the very beginning
+    # 1. Initialize default values
     answer = ""
     documents = []
     distances = []
     confidence = 0.0
     grounding = {}
-    error_message = ""
-
+    
     # ── Week 12: Input Security Validation ────────────────────────────────────
     is_valid, validation_error = validate_input(query)
-    
     if not is_valid:
-        # If unsafe, immediately fill in the error response and return
         answer = validation_error
         return {
             "answer": answer,
-            "sources": documents,       # Empty list []
-            "distances": distances,     # Empty list []
-            "confidence": confidence,   # 0.0
-            "grounding": grounding,     # Empty dict {}
+            "sources": [],
+            "distances": [],
+            "confidence": 0.0,
+            "grounding": {"verdict": "UNKNOWN", "is_grounded": True, "warning": ""},
             "error": validation_error,
         }
         
-    # Sanitize query only if it's valid
     query = sanitize_input(query)
     # ─────────────────────────────────────────────────────────────────────────
 
-    # ── Week 15 TODO ──────────────────────────────────────────────────────────
-    # Rewrite the query before retrieval...
-    # ─────────────────────────────────────────────────────────────────────────
-
     # ── Week 10: Core Retrieval ──────────────────────────────────────────────
-    documents, distances = retrieve_context(query)
+    raw_documents, raw_distances = retrieve_context(query)
 
-    # ── Week 14 TODO ──────────────────────────────────────────────────────────
-    # Filter out documents...
+    # ── Week 14: Filtering irrelevance ────────────────────────────────────────
+    # Apply your threshold filters to weed out unrelated vector matches
+    documents, distances = filter_by_threshold(raw_documents, raw_distances)
+
+    # If NO relevant source files passed the filter, gracefully fall back
+    if not has_relevant_results(documents):
+        answer = get_fallback_response()
+        return {
+            "answer": answer,
+            "sources": [],
+            "distances": [],
+            "confidence": 0.0,
+            "grounding": {"verdict": "GROUNDED", "is_grounded": True, "warning": ""},
+            "error": "",
+        }
     # ─────────────────────────────────────────────────────────────────────────
 
-   # ── Week 10: Core Generation ──────────────────────────────────────────────
-    answer = generate_answer(query, documents, conversation_history)
-
-    # ── Week 13: Monitoring Quality Controls ──────────────────────────────────
+    # Calculate confidence based on the valid, filtered distances
     confidence = calculate_confidence(distances)
+
+    # ── Week 10 & 14: Core Generation with Exception Safety ───────────────────
+    try:
+        answer = generate_answer(query, documents, conversation_history)
+    except Exception as e:
+        # Wrap API crashes or rate-limiting elegantly
+        user_friendly_error = handle_api_error(e)
+        return {
+            "answer": user_friendly_error,
+            "sources": documents,
+            "distances": distances,
+            "confidence": confidence,
+            "grounding": {"verdict": "UNKNOWN", "is_grounded": True, "warning": ""},
+            "error": str(e),
+        }
+    # ─────────────────────────────────────────────────────────────────────────
+
+    # ── Week 13: Grounding Checks ─────────────────────────────────────────────
     grounding = check_hallucination(answer, documents)
     # ─────────────────────────────────────────────────────────────────────────
 
-    # ── Week 11 TODO ──────────────────────────────────────────────────────────
-    # Only save to history if we actually had a valid exchange
+    # ── Week 11: History Logging ──────────────────────────────────────────────
     if conversation_history is not None:
         conversation_history.add_message("user", query)
         conversation_history.add_message("assistant", answer)

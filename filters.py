@@ -19,6 +19,9 @@
 from config import SIMILARITY_THRESHOLD
 
 
+# Make sure to define a threshold value at the top if it isn't already there!
+SIMILARITY_THRESHOLD = 1.0  # Common threshold where L2 distance <= 1.0 is a strong match
+
 def filter_by_threshold(documents, distances, threshold=SIMILARITY_THRESHOLD):
     """
     Keep only documents that are similar enough to the query.
@@ -32,22 +35,19 @@ def filter_by_threshold(documents, distances, threshold=SIMILARITY_THRESHOLD):
     Returns:
         (filtered_documents, filtered_distances) — only the passing pairs.
     """
-    # TODO (Week 14): Implement similarity threshold filtering.
-    #
-    # --- The RAG concept ---
-    # This is where we enforce quality control on our retrieved context.
-    # A document with distance 0.3 is very similar to the query — keep it.
-    # A document with distance 1.8 is barely related — discard it.
-    # If we passed irrelevant documents to the LLM, it might hallucinate
-    # or give a confused answer. Filtering keeps the context clean.
-    #
-    # Steps:
-    #   1. Create two empty lists: filtered_docs and filtered_distances
-    #   2. Loop through documents and distances together using zip()
-    #   3. For each (doc, distance) pair: if distance <= threshold, keep both
-    #   4. Return (filtered_docs, filtered_distances)
-    #
-    return documents, distances  # placeholder — returns everything unfiltered
+    # 1. Create two empty lists to store passing pairs
+    filtered_docs = []
+    filtered_distances = []
+
+    # 2. Loop through documents and distances together using zip()
+    for doc, distance in zip(documents, distances):
+        # 3. Keep only documents that are close enough in vector space
+        if distance <= threshold:
+            filtered_docs.append(doc)
+            filtered_distances.append(distance)
+
+    # 4. Return the filtered collections
+    return filtered_docs, filtered_distances
 
 
 def has_relevant_results(documents):
@@ -62,21 +62,14 @@ def get_fallback_response():
     Returns:
         A string explaining why no answer was generated and what to try instead.
     """
-    # TODO (Week 14): Write a graceful fallback message.
-    #
-    # --- The RAG concept ---
-    # When the filter removes all documents, there's nothing for the LLM to
-    # base an answer on. Instead of returning an empty string or letting the
-    # LLM make something up from nothing, we stop early and tell the user
-    # what happened. This is called "graceful degradation."
-    #
-    # Write a user-friendly message that:
-    #   - Explains no relevant information was found
-    #   - Suggests the user try rephrasing or asks about supported topics
-    #     (Python, machine learning, databases, APIs, AI concepts)
-    #
-    return "No relevant information found."  # placeholder — make this more helpful
-
+    return (
+        "I'm sorry, but I couldn't find any relevant information in my database "
+        "to securely answer your question.\n\n"
+        "**What you can try:**\n"
+        "* **Rephrase your query:** Use different or more specific keywords.\n"
+        "* **Ask about supported topics:** This knowledge base is optimized for "
+        "Python programming, machine learning, databases, APIs, and general AI concepts."
+    )
 
 def handle_api_error(error):
     """
