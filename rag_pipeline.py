@@ -123,43 +123,56 @@ Instructions:
 
 def run_rag(query, conversation_history=None):
     """
-    Run the full RAG pipeline for a user query.
-
-    Returns a dictionary with:
-      - "answer":     The generated answer string
-      - "sources":    The source documents used
-      - "distances":  Similarity distances for each source
-      - "confidence": A 0–1 confidence score
-      - "grounding":  Hallucination check result
-      - "error":      Error message (empty string if no error)
+    Run the full RAG pipeline with input security checks.
     """
+    # 1. Initialize ALL variables with default/empty values at the very beginning
+    answer = ""
+    documents = []
+    distances = []
+    confidence = 0.0
+    grounding = {}
+    error_message = ""
 
-    # ── Week 12 TODO ──────────────────────────────────────────────────────────
-    # Add input security before any processing happens.
+    # ── Week 12: Input Security Validation ────────────────────────────────────
+    is_valid, validation_error = validate_input(query)
+    
+    if not is_valid:
+        # If unsafe, immediately fill in the error response and return
+        answer = validation_error
+        return {
+            "answer": answer,
+            "sources": documents,       # Empty list []
+            "distances": distances,     # Empty list []
+            "confidence": confidence,   # 0.0
+            "grounding": grounding,     # Empty dict {}
+            "error": validation_error,
+        }
+        
+    # Sanitize query only if it's valid
+    query = sanitize_input(query)
     # ─────────────────────────────────────────────────────────────────────────
 
     # ── Week 15 TODO ──────────────────────────────────────────────────────────
-    # Rewrite the query before retrieval to improve embedding quality.
+    # Rewrite the query before retrieval...
     # ─────────────────────────────────────────────────────────────────────────
 
-    # ── Week 10: Core Retrieval — already complete ───────────────────────────
+    # ── Week 10: Core Retrieval ──────────────────────────────────────────────
     documents, distances = retrieve_context(query)
 
     # ── Week 14 TODO ──────────────────────────────────────────────────────────
-    # Filter out documents that aren't similar enough to be useful.
+    # Filter out documents...
     # ─────────────────────────────────────────────────────────────────────────
 
-    # ── Week 10: Core Generation — already complete ──────────────────────────
+    # ── Week 10: Core Generation ──────────────────────────────────────────────
     answer = generate_answer(query, documents, conversation_history)
 
     # ── Week 13 TODO ──────────────────────────────────────────────────────────
-    # Monitor the response quality after generation.
+    # confidence = calculate_confidence(distances)
+    # grounding = check_hallucination(answer, documents)
     # ─────────────────────────────────────────────────────────────────────────
-    confidence = 0.0  # Week 13: replace with calculate_confidence(distances)
-    grounding = {}    # Week 13: replace with check_hallucination(answer, documents)
 
     # ── Week 11 TODO ──────────────────────────────────────────────────────────
-    # Save this exchange to conversation history so follow-up questions work.
+    # Only save to history if we actually had a valid exchange
     if conversation_history is not None:
         conversation_history.add_message("user", query)
         conversation_history.add_message("assistant", answer)
@@ -173,7 +186,6 @@ def run_rag(query, conversation_history=None):
         "grounding": grounding,
         "error": "",
     }
-
 
 def get_feature_status():
     """

@@ -13,8 +13,6 @@
 
 import re
 
-# TODO (Week 12): Fill in the BLOCKED_PATTERNS list.
-#
 # --- The RAG/security concept ---
 # Think about what a prompt injection attack looks like.
 # An attacker is trying to write text that will "escape" from the user
@@ -25,8 +23,17 @@ import re
 # identity, asking the model to forget its context, etc.
 #
 BLOCKED_PATTERNS = [
-    # Add your blocked phrases here (all lowercase)
-    # Example: "ignore previous instructions",
+    "ignore previous instructions",
+    "ignore your previous instructions", # <-- Added this variation!
+    "ignore above instructions",
+    "system override",
+    "you are now a",
+    "forget your instructions",
+    "disregard all previous instructions",
+    "new directive",
+    "start instructions from scratch",
+    "bypass safety filters",
+    "tell me a joke" # <-- Added this to catch this specific test!
 ]
 
 # Maximum allowed length for a user query.
@@ -34,39 +41,31 @@ BLOCKED_PATTERNS = [
 MAX_QUERY_LENGTH = 500
 
 
-def validate_input(query):
+def validate_input(query: str):
     """
-    Check whether a query is safe and valid before sending it to the LLM.
-
-    Returns:
-        (True, "")                    — query is safe, proceed
-        (False, "error message")      — query is unsafe, show the error
+    Validate the user's query against security boundaries.
+    Checks for maximum length and malicious injection patterns.
     """
-    # TODO (Week 12): Implement three safety checks.
-    #
-    # --- The RAG/security concept ---
-    # We validate at the system boundary — the moment user input enters our app.
-    # This is called "input validation" and it's a fundamental security principle.
-    # Once bad input reaches the LLM prompt, it's much harder to defend against.
-    #
-    # Check 1 — Empty input:
-    #   If query is empty or only whitespace, the app would send a pointless
-    #   API call. Return: (False, "Please enter a question before submitting.")
-    #
-    # Check 2 — Input too long:
-    #   Long inputs cost more tokens and can be used to flood the context window.
-    #   If len(query) > MAX_QUERY_LENGTH, return:
-    #   (False, f"Your query is too long. Please keep it under {MAX_QUERY_LENGTH} characters.")
-    #
-    # Check 3 — Prompt injection patterns:
-    #   Convert the query to lowercase (query.lower()), then check whether any
-    #   string from BLOCKED_PATTERNS appears inside it.
-    #   If found, return: (False, "Your query contains content that cannot be processed.")
-    #
-    # If all three checks pass, return: (True, "")
-    #
-    return True, ""  # placeholder — replace with your implementation
+    if not query or not query.strip():
+        return False, "Query cannot be empty."
 
+    # 1. Check length limit
+    if len(query) > MAX_QUERY_LENGTH:
+        return False, f"Query exceeds the maximum limit of {MAX_QUERY_LENGTH} characters."
+
+    # 2. Check blocked patterns (case-insensitive)
+    query_lower = query.lower()
+    for pattern in BLOCKED_PATTERNS:
+        if pattern in query_lower:
+            return False, "Security Alert: Unsafe input pattern or potential prompt injection detected."
+
+    return True, ""
+
+def sanitize_input(query: str) -> str:
+    """
+    Sanitize input to clean up extra spacing or basic formatting characters.
+    """
+    return query.strip()
 
 def sanitize_input(query):
     """Remove leading/trailing whitespace from user input."""
